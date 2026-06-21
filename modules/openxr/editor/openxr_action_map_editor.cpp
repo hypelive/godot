@@ -32,11 +32,15 @@
 
 #include "core/config/project_settings.h"
 #include "core/io/dir_access.h"
+#include "core/io/resource_loader.h"
+#include "core/io/resource_saver.h"
+#include "core/object/callable_mp.h"
+#include "core/object/class_db.h"
 #include "editor/editor_node.h"
-#include "editor/gui/editor_file_dialog.h"
 #include "editor/settings/editor_command_palette.h"
 #include "editor/settings/editor_settings.h"
 #include "editor/themes/editor_scale.h"
+#include "scene/gui/separator.h"
 
 HashMap<String, String> OpenXRActionMapEditor::interaction_profile_editors;
 HashMap<String, String> OpenXRActionMapEditor::binding_modifier_editors;
@@ -84,6 +88,7 @@ OpenXRActionSetEditor *OpenXRActionMapEditor::_add_action_set_editor(const Ref<O
 	OpenXRActionSetEditor *action_set_editor = memnew(OpenXRActionSetEditor(action_map, p_action_set));
 	action_set_editor->connect("remove", callable_mp(this, &OpenXRActionMapEditor::_on_remove_action_set));
 	action_set_editor->connect("action_removed", callable_mp(this, &OpenXRActionMapEditor::_on_action_removed));
+	action_set_editor->connect("action_renamed", callable_mp(this, &OpenXRActionMapEditor::_on_action_renamed));
 
 	actionsets_vb->add_child(action_set_editor);
 
@@ -246,6 +251,15 @@ void OpenXRActionMapEditor::_on_action_removed(const Ref<OpenXRAction> &p_action
 	}
 }
 
+void OpenXRActionMapEditor::_on_action_renamed(const Ref<OpenXRAction> &p_action) {
+	for (int i = 0; i < tabs->get_tab_count(); i++) {
+		OpenXRInteractionProfileEditorBase *interaction_profile_editor = Object::cast_to<OpenXRInteractionProfileEditorBase>(tabs->get_tab_control(i));
+		if (interaction_profile_editor) {
+			interaction_profile_editor->_set_dirty();
+		}
+	}
+}
+
 void OpenXRActionMapEditor::_on_add_interaction_profile() {
 	ERR_FAIL_COND(action_map.is_null());
 
@@ -338,6 +352,13 @@ void OpenXRActionMapEditor::_on_reset_to_default_layout() {
 }
 
 void OpenXRActionMapEditor::_on_tabs_tab_changed(int p_tab) {
+	OpenXRInteractionProfileEditorBase *interaction_profile_editor = Object::cast_to<OpenXRInteractionProfileEditorBase>(tabs->get_tab_control(p_tab));
+
+	if (!interaction_profile_editor) {
+		return;
+	}
+
+	interaction_profile_editor->_update_interaction_profile();
 }
 
 void OpenXRActionMapEditor::_on_tab_button_pressed(int p_tab) {
@@ -437,7 +458,7 @@ OpenXRActionMapEditor::OpenXRActionMapEditor() {
 	set_name(TTRC("OpenXR Action Map"));
 	set_icon_name("OpenXRActionMap");
 	set_dock_shortcut(ED_SHORTCUT_AND_COMMAND("bottom_panels/toggle_openxr_action_map_bottom_panel", TTRC("Toggle OpenXR Action Map Dock")));
-	set_default_slot(DockConstants::DOCK_SLOT_BOTTOM);
+	set_default_slot(EditorDock::DOCK_SLOT_BOTTOM);
 	set_available_layouts(EditorDock::DOCK_LAYOUT_HORIZONTAL | EditorDock::DOCK_LAYOUT_FLOATING);
 	set_custom_minimum_size(Size2(0.0, 300.0 * EDSCALE));
 

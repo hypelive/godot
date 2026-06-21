@@ -33,9 +33,11 @@
 #define DR_MP3_NO_STDIO
 
 #include "audio_stream_mp3.h"
-#include "core/io/file_access.h"
 
-#include "thirdparty/dr_libs/dr_bridge.h"
+#include "core/io/file_access.h"
+#include "core/object/class_db.h"
+
+#include <thirdparty/dr_libs/dr_bridge.h>
 
 int AudioStreamPlaybackMP3::_mix_internal(AudioFrame *p_buffer, int p_frames) {
 	if (!active) {
@@ -354,11 +356,4 @@ void AudioStreamMP3::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "bar_beats", PROPERTY_HINT_RANGE, "2,32,1,or_greater"), "set_bar_beats", "get_bar_beats");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "loop"), "set_loop", "has_loop");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "loop_offset"), "set_loop_offset", "get_loop_offset");
-}
-
-AudioStreamMP3::AudioStreamMP3() {
-}
-
-AudioStreamMP3::~AudioStreamMP3() {
-	clear_data();
 }

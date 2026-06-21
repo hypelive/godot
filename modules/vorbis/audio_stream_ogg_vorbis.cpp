@@ -29,8 +29,9 @@
 /**************************************************************************/
 
 #include "audio_stream_ogg_vorbis.h"
-#include "core/io/file_access.h"
 
+#include "core/io/file_access.h"
+#include "core/object/class_db.h"
 #include "core/templates/rb_map.h"
 
 #include <ogg/ogg.h>
@@ -736,7 +737,3 @@ void AudioStreamOggVorbis::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "loop"), "set_loop", "has_loop");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "loop_offset"), "set_loop_offset", "get_loop_offset");
 }
-
-AudioStreamOggVorbis::AudioStreamOggVorbis() {}
-
-AudioStreamOggVorbis::~AudioStreamOggVorbis() {}

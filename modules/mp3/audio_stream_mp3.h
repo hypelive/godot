@@ -32,7 +32,7 @@
 
 #include "servers/audio/audio_stream.h"
 
-#include "thirdparty/dr_libs/dr_mp3.h"
+#include <thirdparty/dr_libs/dr_mp3.h>
 
 class AudioStreamMP3;
 
@@ -146,7 +146,4 @@ public:
 	virtual Ref<AudioSample> generate_sample() const override;
 
 	virtual void get_parameter_list(List<Parameter> *r_parameters) override;
-
-	AudioStreamMP3();
-	virtual ~AudioStreamMP3();
 };

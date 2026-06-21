@@ -31,6 +31,9 @@
 #include "editor_plugin.h"
 #include "editor_plugin.compat.inc"
 
+#include "core/io/resource_importer.h"
+#include "core/object/callable_mp.h"
+#include "core/object/class_db.h"
 #include "editor/debugger/editor_debugger_node.h"
 #include "editor/debugger/editor_debugger_plugin.h"
 #include "editor/docks/editor_dock.h"
@@ -51,6 +54,7 @@
 #include "editor/plugins/editor_plugin_list.h"
 #include "editor/plugins/editor_resource_conversion_plugin.h"
 #include "editor/scene/3d/node_3d_editor_plugin.h"
+#include "editor/scene/3d/node_3d_editor_viewport.h"
 #include "editor/scene/canvas_item_editor_plugin.h"
 #include "editor/script/script_editor_plugin.h"
 #include "editor/settings/project_settings_editor.h"
@@ -90,11 +94,12 @@ Button *EditorPlugin::add_control_to_bottom_panel(Control *p_control, const Stri
 void EditorPlugin::add_control_to_dock(DockSlot p_slot, Control *p_control, const Ref<Shortcut> &p_shortcut) {
 	ERR_FAIL_NULL(p_control);
 	ERR_FAIL_COND(legacy_docks.has(p_control));
+	ERR_FAIL_COND(p_control->get_parent() != nullptr);
 
 	EditorDock *dock = memnew(EditorDock);
 	dock->set_title(p_control->get_name());
 	dock->set_dock_shortcut(p_shortcut);
-	dock->set_default_slot((DockConstants::DockSlot)p_slot);
+	dock->set_default_slot((EditorDock::DockSlot)p_slot);
 	dock->add_child(p_control);
 	legacy_docks[p_control] = dock;
 
@@ -104,6 +109,9 @@ void EditorPlugin::add_control_to_dock(DockSlot p_slot, Control *p_control, cons
 void EditorPlugin::remove_control_from_docks(Control *p_control) {
 	ERR_FAIL_NULL(p_control);
 	ERR_FAIL_COND(!legacy_docks.has(p_control));
+
+	// Ensure freeing the legacy dock won't free `p_control` (freeing it is up to the user).
+	legacy_docks[p_control]->remove_child(p_control);
 
 	EditorDockManager::get_singleton()->remove_dock(legacy_docks[p_control]);
 	legacy_docks[p_control]->queue_free();
@@ -705,10 +713,10 @@ void EditorPlugin::_bind_methods() {
 	GDVIRTUAL_BIND(_enable_plugin);
 	GDVIRTUAL_BIND(_disable_plugin);
 
-	ADD_SIGNAL(MethodInfo("scene_changed", PropertyInfo(Variant::OBJECT, "scene_root", PROPERTY_HINT_RESOURCE_TYPE, "Node")));
+	ADD_SIGNAL(MethodInfo("scene_changed", PropertyInfo(Variant::OBJECT, "scene_root", PROPERTY_HINT_RESOURCE_TYPE, Node::get_class_static())));
 	ADD_SIGNAL(MethodInfo("scene_closed", PropertyInfo(Variant::STRING, "filepath")));
 	ADD_SIGNAL(MethodInfo("main_screen_changed", PropertyInfo(Variant::STRING, "screen_name")));
-	ADD_SIGNAL(MethodInfo("resource_saved", PropertyInfo(Variant::OBJECT, "resource", PROPERTY_HINT_RESOURCE_TYPE, "Resource")));
+	ADD_SIGNAL(MethodInfo("resource_saved", PropertyInfo(Variant::OBJECT, "resource", PROPERTY_HINT_RESOURCE_TYPE, Resource::get_class_static())));
 	ADD_SIGNAL(MethodInfo("scene_saved", PropertyInfo(Variant::STRING, "filepath")));
 	ADD_SIGNAL(MethodInfo("project_settings_changed"));
 
@@ -725,6 +733,7 @@ void EditorPlugin::_bind_methods() {
 	BIND_ENUM_CONSTANT(CONTAINER_PROJECT_SETTING_TAB_LEFT);
 	BIND_ENUM_CONSTANT(CONTAINER_PROJECT_SETTING_TAB_RIGHT);
 
+#ifndef DISABLE_DEPRECATED
 	BIND_ENUM_CONSTANT(DOCK_SLOT_NONE);
 	BIND_ENUM_CONSTANT(DOCK_SLOT_LEFT_UL);
 	BIND_ENUM_CONSTANT(DOCK_SLOT_LEFT_BL);
@@ -736,6 +745,7 @@ void EditorPlugin::_bind_methods() {
 	BIND_ENUM_CONSTANT(DOCK_SLOT_RIGHT_BR);
 	BIND_ENUM_CONSTANT(DOCK_SLOT_BOTTOM);
 	BIND_ENUM_CONSTANT(DOCK_SLOT_MAX);
+#endif
 
 	BIND_ENUM_CONSTANT(AFTER_GUI_INPUT_PASS);
 	BIND_ENUM_CONSTANT(AFTER_GUI_INPUT_STOP);

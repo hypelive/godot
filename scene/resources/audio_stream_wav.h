@@ -32,7 +32,7 @@
 
 #include "servers/audio/audio_stream.h"
 
-#include "thirdparty/misc/qoa.h"
+#include <thirdparty/misc/qoa.h>
 
 class AudioStreamWAV;
 
@@ -55,7 +55,6 @@ class AudioStreamPlaybackWAV : public AudioStreamPlaybackResampled {
 		uint64_t data_ofs = 0;
 		uint32_t frame_len = 0;
 		TightLocalVector<int16_t> dec;
-		uint32_t dec_len = 0;
 	} qoa;
 
 	int64_t offset = 0;

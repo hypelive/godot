@@ -32,6 +32,7 @@
 
 #include "core/io/file_access_memory.h"
 #include "core/io/marshalls.h"
+#include "core/object/class_db.h"
 
 const float TRIM_DB_LIMIT = -50;
 const int TRIM_FADE_OUT_FRAMES = 500;
@@ -179,7 +180,7 @@ void AudioStreamPlaybackWAV::decode_samples(const Depth *p_src, AudioFrame *p_ds
 			if (p_qoa->data_ofs != new_data_ofs) {
 				p_qoa->data_ofs = new_data_ofs;
 				const uint8_t *ofs_src = (uint8_t *)p_src + p_qoa->data_ofs;
-				qoa_decode_frame(ofs_src, p_qoa->frame_len, &p_qoa->desc, p_qoa->dec.ptr(), &p_qoa->dec_len);
+				qoa_decode_frame(ofs_src, p_qoa->frame_len, &p_qoa->desc, p_qoa->dec.ptr(), nullptr);
 			}
 
 			uint32_t dec_idx = pos % QOA_FRAME_LEN << (is_stereo ? 1 : 0);
@@ -881,6 +882,7 @@ Ref<AudioStreamWAV> AudioStreamWAV::load_from_buffer(const Vector<uint8_t> &p_st
 				// 'INFO' list type.
 				// The size of an entry can be arbitrary.
 				while (file->get_position() < end_of_chunk) {
+					ERR_BREAK_MSG(file->eof_reached(), "EOF reached while reading INFO chunk.");
 					char info_id[4];
 					file->get_buffer((uint8_t *)&info_id, 4);
 

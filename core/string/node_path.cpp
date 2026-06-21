@@ -33,24 +33,16 @@
 #include "core/variant/variant.h"
 
 void NodePath::_update_hash_cache() const {
-	uint32_t h = data->absolute ? 1 : 0;
-	int pc = data->path.size();
-	const StringName *sn = data->path.ptr();
-	for (int i = 0; i < pc; i++) {
-		h = h ^ sn[i].hash();
-	}
-	int spc = data->subpath.size();
-	const StringName *ssn = data->subpath.ptr();
-	for (int i = 0; i < spc; i++) {
-		h = h ^ ssn[i].hash();
-	}
-
+	StringName path = get_concatenated_names();
+	StringName subpath = get_concatenated_subnames();
+	uint32_t hash = HashMapHasherDefault::hash(Pair<const StringName &, const StringName &>(path, subpath));
+	data->hash_cache = is_absolute() ? hash : ~hash;
 	data->hash_cache_valid = true;
-	data->hash_cache = h;
 }
 
 void NodePath::prepend_period() {
 	if (data->path.size() && data->path[0].operator String() != ".") {
+		_copy_on_write();
 		data->path.insert(0, ".");
 		data->concatenated_path = StringName();
 		data->hash_cache_valid = false;
@@ -174,6 +166,29 @@ void NodePath::operator=(const NodePath &p_path) {
 	if (p_path.data && p_path.data->refcount.ref()) {
 		data = p_path.data;
 	}
+}
+
+void NodePath::_copy_on_write() {
+	if (!data) {
+		return; // No data; nothing to do.
+	}
+
+	if (data->refcount.get() == 1) {
+		return; // Already the only owner of data.
+	}
+
+	// Make a copy.
+	Data *new_data = memnew(Data);
+	new_data->refcount.init();
+	new_data->path = data->path;
+	new_data->subpath = data->subpath;
+	new_data->concatenated_path = data->concatenated_path;
+	new_data->concatenated_subpath = data->concatenated_subpath;
+	new_data->absolute = data->absolute;
+	new_data->hash_cache_valid = data->hash_cache_valid;
+	new_data->hash_cache = data->hash_cache;
+	unref();
+	data = new_data;
 }
 
 NodePath::operator String() const {
@@ -341,6 +356,7 @@ void NodePath::simplify() {
 	if (!data) {
 		return;
 	}
+	_copy_on_write();
 	for (int i = 0; i < data->path.size(); i++) {
 		if (data->path.size() == 1) {
 			break;
